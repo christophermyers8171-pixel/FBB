@@ -114,6 +114,7 @@ function createExerciseCard(exercise, inSuperset) {
   }
 
   const restVal = exercise.restSeconds != null ? exercise.restSeconds : '';
+  const tempoVal = exercise.tempo != null ? exercise.tempo : '';
 
   card.innerHTML = `
     <div class="exercise-header">
@@ -136,12 +137,20 @@ function createExerciseCard(exercise, inSuperset) {
     </table>
     <div class="exercise-footer">
       <button class="add-set-btn" data-exercise-id="${exercise.id}">+ Add Set</button>
-      <div class="rest-input-row">
-        <label class="rest-label" for="rest-${exercise.id}">Rest:</label>
-        <input class="set-input rest" id="rest-${exercise.id}" type="text" inputmode="numeric" pattern="[0-9]*"
-          value="${restVal}" placeholder="sec"
-          data-rest-input data-exercise-id="${exercise.id}">
-        <span class="rest-unit">sec</span>
+      <div class="exercise-meta-row">
+        <div class="meta-input-group">
+          <label class="meta-label" for="tempo-${exercise.id}">Tempo:</label>
+          <input class="set-input meta" id="tempo-${exercise.id}" type="text" inputmode="numeric" pattern="[0-9]*"
+            value="${escapeHtml(tempoVal)}" placeholder="3010"
+            data-tempo-input data-exercise-id="${exercise.id}">
+        </div>
+        <div class="meta-input-group">
+          <label class="meta-label" for="rest-${exercise.id}">Rest:</label>
+          <input class="set-input meta" id="rest-${exercise.id}" type="text" inputmode="numeric" pattern="[0-9]*"
+            value="${restVal}" placeholder="sec"
+            data-rest-input data-exercise-id="${exercise.id}">
+          <span class="meta-unit">s</span>
+        </div>
       </div>
     </div>
   `;
@@ -332,6 +341,7 @@ export function initEvents() {
   document.getElementById('exercises-container').addEventListener('click', handleExerciseClick);
   document.getElementById('exercises-container').addEventListener('input', handleSetInput);
   document.getElementById('exercises-container').addEventListener('input', handleRestInput);
+  document.getElementById('exercises-container').addEventListener('input', handleTempoInput);
   document.getElementById('exercises-container').addEventListener('change', handleHoldToggle);
 
   // Date navigation
@@ -564,6 +574,16 @@ function handleRestInput(e) {
   const exId = input.dataset.exerciseId;
   const value = input.value === '' ? null : parseInt(input.value) || 0;
   updateExerciseField(currentWorkout, exId, 'restSeconds', value);
+  scheduleSave();
+}
+
+function handleTempoInput(e) {
+  const input = e.target.closest('[data-tempo-input]');
+  if (!input) return;
+
+  const exId = input.dataset.exerciseId;
+  const value = input.value.trim() === '' ? null : input.value.trim();
+  updateExerciseField(currentWorkout, exId, 'tempo', value);
   scheduleSave();
 }
 

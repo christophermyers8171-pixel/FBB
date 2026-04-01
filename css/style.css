@@ -306,20 +306,26 @@ body {
   padding: 10px 16px;
 }
 
-.rest-input-row {
+.exercise-meta-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
   padding: 6px 16px 6px 0;
 }
 
-.rest-label {
+.meta-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-label {
   font-size: 12px;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
-.set-input.rest {
+.set-input.meta {
   width: 50px;
   padding: 6px;
   font-size: 14px;
@@ -327,7 +333,7 @@ body {
   min-height: 30px;
 }
 
-.rest-unit {
+.meta-unit {
   font-size: 12px;
   color: var(--text-muted);
 }

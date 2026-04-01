@@ -12,6 +12,7 @@ export function addExercise(workout, name, supersetId) {
     name,
     supersetId: supersetId || null,
     restSeconds: null,
+    tempo: null,
     sets: []
   };
   if (supersetId) {
