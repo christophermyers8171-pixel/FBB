@@ -5,8 +5,8 @@
   "start_url": "/FBB/",
   "scope": "/FBB/",
   "display": "standalone",
-  "theme_color": "#1a1a2e",
-  "background_color": "#1a1a2e",
+  "theme_color": "#1c1917",
+  "background_color": "#1c1917",
   "icons": [
     {
       "src": "icons/icon-192.png",
