@@ -366,6 +366,92 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
+/* Superset headers row */
+.superset-headers {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.superset-exercise-header {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.superset-exercise-header:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+/* Round layout */
+.superset-round {
+  border-bottom: 1px solid var(--border);
+}
+
+.round-marker {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 16px 2px;
+}
+
+.superset-set-row {
+  padding: 4px 16px 8px;
+}
+
+.superset-set-row:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.ss-exercise-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.ss-inputs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ss-inputs .set-input.reps { width: 54px; }
+.ss-inputs .set-input.weight { width: 60px; }
+.ss-inputs .set-input.rest { width: 46px; }
+.ss-inputs .set-input.notes { flex: 1; min-width: 50px; }
+
+/* Superset footer */
+.superset-footer {
+  padding: 0 16px 8px;
+}
+
+.add-round-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.add-round-btn:active {
+  background: var(--surface-hover);
+}
+
+.superset-tempo-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+
 .add-superset-exercise-btn {
   width: 100%;
   background: none;
@@ -390,14 +476,11 @@ body {
   margin-top: 8px;
 }
 
-.add-buttons-row .btn-primary {
+.add-buttons-row .btn-primary,
+.add-buttons-row .btn-secondary {
   flex: 1;
   margin-top: 0;
-}
-
-.add-buttons-row .btn-secondary {
-  flex-shrink: 0;
-  white-space: nowrap;
+  justify-content: center;
 }
 
 /* Primary button */
@@ -716,6 +799,22 @@ body {
   color: var(--text-secondary);
   padding: 4px 0;
   padding-left: 12px;
+}
+
+.workout-readonly .round-label-readonly {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 0 2px 12px;
+}
+
+.workout-readonly .tempo-line {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2px 0 4px 12px;
 }
 
 /* Export range */

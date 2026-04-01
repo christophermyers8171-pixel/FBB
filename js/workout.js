@@ -76,6 +76,17 @@ export function moveExercise(workout, exerciseId, direction) {
   workout.exercises[newIdx] = temp;
 }
 
+export function moveGroup(workout, exerciseId, direction) {
+  const groups = getExerciseGroups(workout);
+  const groupIdx = groups.findIndex((g) => g.exercises.some((e) => e.id === exerciseId));
+  if (groupIdx === -1) return;
+  const targetIdx = groupIdx + direction;
+  if (targetIdx < 0 || targetIdx >= groups.length) return;
+  const newGroups = [...groups];
+  [newGroups[groupIdx], newGroups[targetIdx]] = [newGroups[targetIdx], newGroups[groupIdx]];
+  workout.exercises = newGroups.flatMap((g) => g.exercises);
+}
+
 export function updateExerciseField(workout, exerciseId, field, value) {
   const ex = workout.exercises.find((e) => e.id === exerciseId);
   if (ex) ex[field] = value;

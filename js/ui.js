@@ -1,5 +1,5 @@
 import { getWorkout, saveWorkout, getWorkoutDates, getWorkoutsInRange, getAllWorkouts } from './db.js';
-import { createWorkout, addExercise, removeExercise, renameExercise, moveExercise, addSet, removeSet, updateSet, createSupersetId, removeFromSuperset, getExerciseGroups, updateExerciseField } from './workout.js';
+import { createWorkout, addExercise, removeExercise, renameExercise, moveGroup, addSet, removeSet, updateSet, createSupersetId, removeFromSuperset, getExerciseGroups, updateExerciseField } from './workout.js';
 import { generateWorkoutMarkdown, generateBulkMarkdown, exportMarkdownFile, copyMarkdownToClipboard } from './markdown.js';
 
 let currentWorkout = null;
@@ -81,21 +81,85 @@ function createSupersetCard(group) {
   wrapper.className = 'superset-group';
   wrapper.dataset.supersetId = group.supersetId;
 
-  const label = document.createElement('div');
-  label.className = 'superset-label';
-  label.textContent = 'SUPERSET';
-  wrapper.appendChild(label);
+  const maxSets = Math.max(...group.exercises.map((ex) => ex.sets.length), 0);
 
+  let html = `<div class="superset-label">SUPERSET</div>`;
+
+  // Exercise headers row
+  html += `<div class="superset-headers">`;
   for (const ex of group.exercises) {
-    wrapper.appendChild(createExerciseCard(ex, true));
+    html += `
+      <div class="superset-exercise-header">
+        <span class="exercise-name">${escapeHtml(ex.name)}</span>
+        <button class="exercise-menu-btn" data-exercise-id="${ex.id}">&#8942;</button>
+      </div>`;
+  }
+  html += `</div>`;
+
+  // Rounds
+  for (let round = 0; round < maxSets; round++) {
+    html += `<div class="superset-round">`;
+    html += `<div class="round-marker">Round ${round + 1}</div>`;
+
+    for (const ex of group.exercises) {
+      if (ex.sets[round]) {
+        const set = ex.sets[round];
+        const isHold = set.holdSeconds != null;
+        const repsValue = isHold ? (set.holdSeconds || '') : (set.reps != null ? set.reps : '');
+        const repsPlaceholder = isHold ? 'sec' : 'reps';
+
+        html += `
+          <div class="superset-set-row">
+            <div class="ss-exercise-label">${escapeHtml(ex.name)}</div>
+            <div class="ss-inputs">
+              <div class="hold-toggle">
+                <input class="set-input reps" type="text" inputmode="numeric" pattern="[0-9]*"
+                  value="${repsValue}" placeholder="${repsPlaceholder}"
+                  data-field="${isHold ? 'holdSeconds' : 'reps'}"
+                  data-exercise-id="${ex.id}" data-set-index="${round}">
+                <label><input type="checkbox" ${isHold ? 'checked' : ''}
+                  data-hold-toggle data-exercise-id="${ex.id}" data-set-index="${round}"> hold</label>
+              </div>
+              <input class="set-input weight" type="text" inputmode="numeric" pattern="[0-9]*"
+                value="${set.weight != null ? set.weight : ''}" placeholder="lbs"
+                data-field="weight"
+                data-exercise-id="${ex.id}" data-set-index="${round}">
+              <input class="set-input rest" type="text" inputmode="numeric" pattern="[0-9]*"
+                value="${set.restSeconds != null ? set.restSeconds : ''}" placeholder="sec"
+                data-field="restSeconds"
+                data-exercise-id="${ex.id}" data-set-index="${round}">
+              <input class="set-input notes" type="text"
+                value="${escapeHtml(set.notes || '')}" placeholder="notes"
+                data-field="notes"
+                data-exercise-id="${ex.id}" data-set-index="${round}">
+              <button class="delete-set-btn" data-exercise-id="${ex.id}" data-set-index="${round}">&times;</button>
+            </div>
+          </div>`;
+      }
+    }
+    html += `</div>`;
   }
 
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-superset-exercise-btn';
-  addBtn.dataset.supersetId = group.supersetId;
-  addBtn.textContent = '+ Add Exercise to Superset';
-  wrapper.appendChild(addBtn);
+  // Footer: add round + tempo per exercise
+  html += `<div class="superset-footer">`;
+  html += `<button class="add-round-btn" data-superset-id="${group.supersetId}">+ Add Round</button>`;
+  html += `<div class="superset-tempo-row">`;
+  for (const ex of group.exercises) {
+    const tempoVal = ex.tempo != null ? ex.tempo : '';
+    html += `
+      <div class="meta-input-group">
+        <label class="meta-label" for="tempo-${ex.id}">${escapeHtml(ex.name)}:</label>
+        <input class="set-input meta" id="tempo-${ex.id}" type="text" inputmode="numeric" pattern="[0-9]*"
+          value="${escapeHtml(tempoVal)}" placeholder="3010"
+          data-tempo-input data-exercise-id="${ex.id}">
+      </div>`;
+  }
+  html += `</div></div>`;
 
+  // Add exercise to superset
+  html += `<button class="add-superset-exercise-btn" data-superset-id="${group.supersetId}">+ Add Exercise to Superset</button>`;
+
+  wrapper.innerHTML = html;
   return wrapper;
 }
 
@@ -295,18 +359,53 @@ export async function loadReadonlyView(date) {
     return;
   }
 
+  const groups = getExerciseGroups(workout);
   let html = '';
-  for (const ex of workout.exercises) {
-    html += `<div class="exercise-block"><h3>${escapeHtml(ex.name)}</h3>`;
-    for (const set of ex.sets) {
-      const repsDisplay = set.holdSeconds != null
-        ? `${set.holdSeconds}s hold`
-        : `${set.reps || '—'}`;
-      const weightDisplay = (set.weight == null || set.weight === 0) ? 'BW' : `${set.weight} ${set.unit || 'lbs'}`;
-      const notes = set.notes ? ` — ${set.notes}` : '';
-      html += `<div class="set-line">Set ${set.setNumber}: ${repsDisplay} × ${weightDisplay}${notes}</div>`;
+
+  for (const group of groups) {
+    if (group.type === 'superset') {
+      const names = group.exercises.map((e) => e.name).join(' / ');
+      html += `<div class="exercise-block superset-block"><h3>Superset: ${escapeHtml(names)}</h3>`;
+      const tempos = group.exercises.filter((e) => e.tempo).map((e) => `${e.name}: ${e.tempo}`);
+      if (tempos.length) {
+        html += `<div class="tempo-line">Tempo — ${escapeHtml(tempos.join(' | '))}</div>`;
+      }
+      const maxSets = Math.max(...group.exercises.map((e) => e.sets.length));
+      for (let round = 0; round < maxSets; round++) {
+        html += `<div class="round-label-readonly">Round ${round + 1}</div>`;
+        for (const ex of group.exercises) {
+          if (ex.sets[round]) {
+            const set = ex.sets[round];
+            const repsDisplay = set.holdSeconds != null
+              ? `${set.holdSeconds}s hold`
+              : `${set.reps || '—'}`;
+            const weightDisplay = (set.weight == null || set.weight === 0) ? 'BW' : `${set.weight} ${set.unit || 'lbs'}`;
+            let details = `${repsDisplay} × ${weightDisplay}`;
+            if (set.restSeconds != null) details += ` (rest ${set.restSeconds}s)`;
+            if (set.notes) details += ` — ${set.notes}`;
+            html += `<div class="set-line">${escapeHtml(ex.name)}: ${details}</div>`;
+          }
+        }
+      }
+      html += '</div>';
+    } else {
+      const ex = group.exercises[0];
+      html += `<div class="exercise-block"><h3>${escapeHtml(ex.name)}</h3>`;
+      if (ex.tempo) {
+        html += `<div class="tempo-line">Tempo: ${escapeHtml(ex.tempo)}</div>`;
+      }
+      for (const set of ex.sets) {
+        const repsDisplay = set.holdSeconds != null
+          ? `${set.holdSeconds}s hold`
+          : `${set.reps || '—'}`;
+        const weightDisplay = (set.weight == null || set.weight === 0) ? 'BW' : `${set.weight} ${set.unit || 'lbs'}`;
+        let details = `${repsDisplay} × ${weightDisplay}`;
+        if (set.restSeconds != null) details += ` (rest ${set.restSeconds}s)`;
+        if (set.notes) details += ` — ${set.notes}`;
+        html += `<div class="set-line">Set ${set.setNumber}: ${details}</div>`;
+      }
+      html += '</div>';
     }
-    html += '</div>';
   }
   container.innerHTML = html;
 }
@@ -516,6 +615,19 @@ function handleExerciseClick(e) {
     return;
   }
 
+  // Add round to superset
+  const addRoundBtn = e.target.closest('.add-round-btn');
+  if (addRoundBtn) {
+    const ssId = addRoundBtn.dataset.supersetId;
+    const exercises = currentWorkout.exercises.filter((ex) => ex.supersetId === ssId);
+    for (const ex of exercises) {
+      addSet(ex);
+    }
+    scheduleSave();
+    renderWorkoutView();
+    return;
+  }
+
   // Delete set
   const deleteBtn = e.target.closest('.delete-set-btn');
   if (deleteBtn) {
@@ -523,7 +635,17 @@ function handleExerciseClick(e) {
     const setIdx = parseInt(deleteBtn.dataset.setIndex);
     const ex = currentWorkout.exercises.find((ex) => ex.id === exId);
     if (ex) {
-      removeSet(ex, setIdx);
+      if (ex.supersetId) {
+        // Delete this round from all exercises in the superset
+        const ssExercises = currentWorkout.exercises.filter((e) => e.supersetId === ex.supersetId);
+        for (const ssEx of ssExercises) {
+          if (ssEx.sets[setIdx]) {
+            removeSet(ssEx, setIdx);
+          }
+        }
+      } else {
+        removeSet(ex, setIdx);
+      }
       scheduleSave();
       renderWorkoutView();
     }
@@ -622,14 +744,14 @@ export function initContextMenu() {
   });
 
   menu.querySelector('[data-action="move-up"]').addEventListener('click', () => {
-    moveExercise(currentWorkout, menu.dataset.exerciseId, -1);
+    moveGroup(currentWorkout, menu.dataset.exerciseId, -1);
     scheduleSave();
     renderWorkoutView();
     closeContextMenu();
   });
 
   menu.querySelector('[data-action="move-down"]').addEventListener('click', () => {
-    moveExercise(currentWorkout, menu.dataset.exerciseId, 1);
+    moveGroup(currentWorkout, menu.dataset.exerciseId, 1);
     scheduleSave();
     renderWorkoutView();
     closeContextMenu();
