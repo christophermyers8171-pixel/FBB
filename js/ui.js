@@ -1,5 +1,5 @@
 import { getWorkout, saveWorkout, getWorkoutDates, getWorkoutsInRange, getAllWorkouts } from './db.js';
-import { createWorkout, addExercise, removeExercise, renameExercise, moveExercise, addSet, removeSet, updateSet } from './workout.js';
+import { createWorkout, addExercise, removeExercise, renameExercise, moveExercise, addSet, removeSet, updateSet, createSupersetId, removeFromSuperset, getExerciseGroups, updateExerciseField } from './workout.js';
 import { generateWorkoutMarkdown, generateBulkMarkdown, exportMarkdownFile, copyMarkdownToClipboard } from './markdown.js';
 
 let currentWorkout = null;
@@ -65,15 +65,43 @@ function renderWorkoutView() {
       </div>
     `;
   } else {
-    for (const ex of currentWorkout.exercises) {
-      container.appendChild(createExerciseCard(ex));
+    const groups = getExerciseGroups(currentWorkout);
+    for (const group of groups) {
+      if (group.type === 'superset') {
+        container.appendChild(createSupersetCard(group));
+      } else {
+        container.appendChild(createExerciseCard(group.exercises[0]));
+      }
     }
   }
 }
 
-function createExerciseCard(exercise) {
+function createSupersetCard(group) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'superset-group';
+  wrapper.dataset.supersetId = group.supersetId;
+
+  const label = document.createElement('div');
+  label.className = 'superset-label';
+  label.textContent = 'SUPERSET';
+  wrapper.appendChild(label);
+
+  for (const ex of group.exercises) {
+    wrapper.appendChild(createExerciseCard(ex, true));
+  }
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-superset-exercise-btn';
+  addBtn.dataset.supersetId = group.supersetId;
+  addBtn.textContent = '+ Add Exercise to Superset';
+  wrapper.appendChild(addBtn);
+
+  return wrapper;
+}
+
+function createExerciseCard(exercise, inSuperset) {
   const card = document.createElement('div');
-  card.className = 'exercise-card';
+  card.className = 'exercise-card' + (inSuperset ? ' in-superset' : '');
   card.dataset.exerciseId = exercise.id;
 
   const hasHold = exercise.sets.some((s) => s.holdSeconds != null);
@@ -84,6 +112,8 @@ function createExerciseCard(exercise) {
     const isHold = set.holdSeconds != null;
     setsHtml += createSetRow(exercise.id, i, set, isHold);
   }
+
+  const restVal = exercise.restSeconds != null ? exercise.restSeconds : '';
 
   card.innerHTML = `
     <div class="exercise-header">
@@ -104,7 +134,16 @@ function createExerciseCard(exercise) {
         ${setsHtml}
       </tbody>
     </table>
-    <button class="add-set-btn" data-exercise-id="${exercise.id}">+ Add Set</button>
+    <div class="exercise-footer">
+      <button class="add-set-btn" data-exercise-id="${exercise.id}">+ Add Set</button>
+      <div class="rest-input-row">
+        <label class="rest-label" for="rest-${exercise.id}">Rest:</label>
+        <input class="set-input rest" id="rest-${exercise.id}" type="text" inputmode="numeric" pattern="[0-9]*"
+          value="${restVal}" placeholder="sec"
+          data-rest-input data-exercise-id="${exercise.id}">
+        <span class="rest-unit">sec</span>
+      </div>
+    </div>
   `;
 
   return card;
@@ -272,6 +311,11 @@ export function initEvents() {
     openModal('add-exercise');
   });
 
+  // Add Superset button
+  document.getElementById('add-superset-btn').addEventListener('click', () => {
+    openModal('add-superset');
+  });
+
   // Modal confirm
   document.getElementById('modal-confirm').addEventListener('click', handleModalConfirm);
   document.getElementById('modal-cancel').addEventListener('click', closeModal);
@@ -287,6 +331,7 @@ export function initEvents() {
   // Delegated events on exercises container
   document.getElementById('exercises-container').addEventListener('click', handleExerciseClick);
   document.getElementById('exercises-container').addEventListener('input', handleSetInput);
+  document.getElementById('exercises-container').addEventListener('input', handleRestInput);
   document.getElementById('exercises-container').addEventListener('change', handleHoldToggle);
 
   // Date navigation
@@ -370,10 +415,12 @@ export function initEvents() {
 
 let modalMode = null;
 let modalExerciseId = null;
+let modalSupersetId = null;
 
-function openModal(mode, exerciseId) {
+function openModal(mode, exerciseId, supersetId) {
   modalMode = mode;
   modalExerciseId = exerciseId;
+  modalSupersetId = supersetId;
   const overlay = document.getElementById('modal-overlay');
   const input = document.getElementById('modal-input');
   const title = document.getElementById('modal-title');
@@ -387,6 +434,14 @@ function openModal(mode, exerciseId) {
     const ex = currentWorkout.exercises.find((e) => e.id === exerciseId);
     input.value = ex ? ex.name : '';
     input.placeholder = 'New name';
+  } else if (mode === 'add-superset') {
+    title.textContent = 'New Superset — First Exercise';
+    input.value = '';
+    input.placeholder = 'Exercise name';
+  } else if (mode === 'add-superset-exercise') {
+    title.textContent = 'Add to Superset';
+    input.value = '';
+    input.placeholder = 'Exercise name';
   }
 
   overlay.classList.add('active');
@@ -397,6 +452,7 @@ function closeModal() {
   document.getElementById('modal-overlay').classList.remove('active');
   modalMode = null;
   modalExerciseId = null;
+  modalSupersetId = null;
 }
 
 function handleModalConfirm() {
@@ -411,6 +467,17 @@ function handleModalConfirm() {
     renderWorkoutView();
   } else if (modalMode === 'rename-exercise') {
     renameExercise(currentWorkout, modalExerciseId, value);
+    scheduleSave();
+    renderWorkoutView();
+  } else if (modalMode === 'add-superset') {
+    const ssId = createSupersetId();
+    const ex = addExercise(currentWorkout, value, ssId);
+    addSet(ex);
+    scheduleSave();
+    renderWorkoutView();
+  } else if (modalMode === 'add-superset-exercise') {
+    const ex = addExercise(currentWorkout, value, modalSupersetId);
+    addSet(ex);
     scheduleSave();
     renderWorkoutView();
   }
@@ -455,6 +522,13 @@ function handleExerciseClick(e) {
     return;
   }
 
+  // Add exercise to superset
+  const addSsBtn = e.target.closest('.add-superset-exercise-btn');
+  if (addSsBtn) {
+    openModal('add-superset-exercise', null, addSsBtn.dataset.supersetId);
+    return;
+  }
+
   // Exercise menu
   const menuBtn = e.target.closest('.exercise-menu-btn');
   if (menuBtn) {
@@ -480,6 +554,16 @@ function handleSetInput(e) {
   }
 
   updateSet(ex, setIdx, field, value);
+  scheduleSave();
+}
+
+function handleRestInput(e) {
+  const input = e.target.closest('[data-rest-input]');
+  if (!input) return;
+
+  const exId = input.dataset.exerciseId;
+  const value = input.value === '' ? null : parseInt(input.value) || 0;
+  updateExerciseField(currentWorkout, exId, 'restSeconds', value);
   scheduleSave();
 }
 
