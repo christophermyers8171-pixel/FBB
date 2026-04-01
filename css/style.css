@@ -229,6 +229,7 @@ body {
 
 .set-input.reps { width: 60px; }
 .set-input.weight { width: 70px; }
+.set-input.rest { width: 50px; }
 .set-input.notes { width: 100%; min-width: 60px; }
 
 .set-input::placeholder {

@@ -113,7 +113,6 @@ function createExerciseCard(exercise, inSuperset) {
     setsHtml += createSetRow(exercise.id, i, set, isHold);
   }
 
-  const restVal = exercise.restSeconds != null ? exercise.restSeconds : '';
   const tempoVal = exercise.tempo != null ? exercise.tempo : '';
 
   card.innerHTML = `
@@ -127,6 +126,7 @@ function createExerciseCard(exercise, inSuperset) {
           <th>Set</th>
           <th>${hasHold ? 'Reps/Hold' : 'Reps'}</th>
           <th>Weight</th>
+          <th>Rest</th>
           <th>Notes</th>
           <th></th>
         </tr>
@@ -143,13 +143,6 @@ function createExerciseCard(exercise, inSuperset) {
           <input class="set-input meta" id="tempo-${exercise.id}" type="text" inputmode="numeric" pattern="[0-9]*"
             value="${escapeHtml(tempoVal)}" placeholder="3010"
             data-tempo-input data-exercise-id="${exercise.id}">
-        </div>
-        <div class="meta-input-group">
-          <label class="meta-label" for="rest-${exercise.id}">Rest:</label>
-          <input class="set-input meta" id="rest-${exercise.id}" type="text" inputmode="numeric" pattern="[0-9]*"
-            value="${restVal}" placeholder="sec"
-            data-rest-input data-exercise-id="${exercise.id}">
-          <span class="meta-unit">s</span>
         </div>
       </div>
     </div>
@@ -179,6 +172,12 @@ function createSetRow(exerciseId, setIndex, set, isHold) {
         <input class="set-input weight" type="text" inputmode="numeric" pattern="[0-9]*"
           value="${set.weight != null ? set.weight : ''}" placeholder="lbs"
           data-field="weight"
+          data-exercise-id="${exerciseId}" data-set-index="${setIndex}">
+      </td>
+      <td>
+        <input class="set-input rest" type="text" inputmode="numeric" pattern="[0-9]*"
+          value="${set.restSeconds != null ? set.restSeconds : ''}" placeholder="sec"
+          data-field="restSeconds"
           data-exercise-id="${exerciseId}" data-set-index="${setIndex}">
       </td>
       <td>
@@ -340,7 +339,6 @@ export function initEvents() {
   // Delegated events on exercises container
   document.getElementById('exercises-container').addEventListener('click', handleExerciseClick);
   document.getElementById('exercises-container').addEventListener('input', handleSetInput);
-  document.getElementById('exercises-container').addEventListener('input', handleRestInput);
   document.getElementById('exercises-container').addEventListener('input', handleTempoInput);
   document.getElementById('exercises-container').addEventListener('change', handleHoldToggle);
 
@@ -559,21 +557,11 @@ function handleSetInput(e) {
   if (!ex) return;
 
   let value = input.value;
-  if (field === 'reps' || field === 'holdSeconds' || field === 'weight') {
+  if (field === 'reps' || field === 'holdSeconds' || field === 'weight' || field === 'restSeconds') {
     value = value === '' ? null : parseInt(value) || 0;
   }
 
   updateSet(ex, setIdx, field, value);
-  scheduleSave();
-}
-
-function handleRestInput(e) {
-  const input = e.target.closest('[data-rest-input]');
-  if (!input) return;
-
-  const exId = input.dataset.exerciseId;
-  const value = input.value === '' ? null : parseInt(input.value) || 0;
-  updateExerciseField(currentWorkout, exId, 'restSeconds', value);
   scheduleSave();
 }
 

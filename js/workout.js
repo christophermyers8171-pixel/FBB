@@ -11,7 +11,6 @@ export function addExercise(workout, name, supersetId) {
     id: 'ex_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     name,
     supersetId: supersetId || null,
-    restSeconds: null,
     tempo: null,
     sets: []
   };
@@ -90,6 +89,7 @@ export function addSet(exercise) {
     holdSeconds: lastSet ? lastSet.holdSeconds : null,
     weight: lastSet ? lastSet.weight : null,
     unit: lastSet ? lastSet.unit : 'lbs',
+    restSeconds: lastSet ? lastSet.restSeconds : null,
     notes: ''
   };
   exercise.sets.push(set);
