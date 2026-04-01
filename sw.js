@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'fbb-v1';
+const CACHE_VERSION = 'fbb-v2';
 const BASE_PATH = '/FBB/';
 const APP_SHELL = [
   BASE_PATH,
