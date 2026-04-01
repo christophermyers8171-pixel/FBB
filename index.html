@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FBB Log</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a1a2e">
+
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="FBB Log">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>FBB Log</h1>
+    <nav class="header-nav">
+      <button class="header-btn" id="nav-today">Today</button>
+      <button class="header-btn" id="nav-history">History</button>
+    </nav>
+  </header>
+
+  <!-- Date Bar (Today view only) -->
+  <div class="date-bar" id="date-bar">
+    <button id="date-prev">&larr;</button>
+    <span class="date-display" id="date-display"></span>
+    <button id="date-next">&rarr;</button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- Today View -->
+    <section class="view active" id="today-view">
+      <div id="exercises-container"></div>
+      <button class="btn-primary" id="add-exercise-btn">+ Add Exercise</button>
+    </section>
+
+    <!-- History View -->
+    <section class="view" id="history-view">
+      <div class="calendar">
+        <div class="calendar-header">
+          <button id="calendar-prev">&larr;</button>
+          <h3 id="calendar-month"></h3>
+          <button id="calendar-next">&rarr;</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+      </div>
+
+      <h3 style="margin-bottom: 12px; font-size: 16px;">Recent Workouts</h3>
+      <div class="history-list" id="history-list"></div>
+
+      <div class="export-range">
+        <h3>Export Date Range</h3>
+        <div class="date-inputs">
+          <input type="date" id="export-start">
+          <input type="date" id="export-end">
+        </div>
+        <button class="btn-primary" id="bulk-export-btn">Export to Markdown</button>
+      </div>
+    </section>
+
+    <!-- Readonly View -->
+    <section class="view" id="readonly-view">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <button class="back-btn" id="readonly-back">&larr; History</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary" id="readonly-edit">Edit</button>
+          <button class="btn-secondary" id="readonly-export">Export</button>
+        </div>
+      </div>
+      <h2 id="readonly-date" style="font-size: 18px; margin-bottom: 16px;"></h2>
+      <div class="workout-readonly" id="readonly-content"></div>
+    </section>
+
+  </main>
+
+  <!-- Footer Actions (Today view) -->
+  <div class="footer-actions" id="footer-actions">
+    <button class="btn-secondary" id="export-btn">Export .md</button>
+    <button class="btn-secondary" id="share-btn">Copy</button>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h3 id="modal-title">Add Exercise</h3>
+      <input class="modal-input" id="modal-input" type="text" placeholder="Exercise name" autocomplete="off">
+      <div class="modal-actions">
+        <button class="btn-secondary" id="modal-cancel">Cancel</button>
+        <button class="btn-primary" id="modal-confirm" style="margin-top: 0;">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div class="context-menu" id="context-menu">
+    <button data-action="rename">Rename</button>
+    <button data-action="move-up">Move Up</button>
+    <button data-action="move-down">Move Down</button>
+    <button data-action="delete" class="danger">Delete</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
