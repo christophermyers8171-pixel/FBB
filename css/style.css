@@ -854,6 +854,33 @@ body {
   border-color: var(--accent);
 }
 
+/* Backup section */
+.backup-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.backup-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.backup-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.backup-buttons .btn-primary,
+.backup-buttons .btn-secondary {
+  margin-top: 0;
+  width: 100%;
+  justify-content: center;
+}
+
 /* Empty state */
 .empty-state {
   text-align: center;

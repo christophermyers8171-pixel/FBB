@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'fbb-v7';
+const CACHE_VERSION = 'fbb-v8';
 const BASE_PATH = '/FBB/';
 const APP_SHELL = [
   BASE_PATH,
@@ -8,6 +8,7 @@ const APP_SHELL = [
   BASE_PATH + 'js/db.js',
   BASE_PATH + 'js/workout.js',
   BASE_PATH + 'js/markdown.js',
+  BASE_PATH + 'js/backup.js',
   BASE_PATH + 'js/ui.js',
   BASE_PATH + 'manifest.json'
 ];

@@ -1,6 +1,7 @@
 import { getWorkout, saveWorkout, getWorkoutDates, getWorkoutsInRange, getAllWorkouts } from './db.js';
 import { createWorkout, addExercise, removeExercise, renameExercise, moveGroup, addSet, removeSet, updateSet, createSupersetId, removeFromSuperset, getExerciseGroups, updateExerciseField } from './workout.js';
 import { generateWorkoutMarkdown, generateBulkMarkdown, exportMarkdownFile, copyMarkdownToClipboard } from './markdown.js';
+import { exportJsonBackup, importJsonBackup, importMarkdownFiles, pickFiles } from './backup.js';
 
 let currentWorkout = null;
 let currentDate = todayString();
@@ -506,6 +507,11 @@ export function initEvents() {
   // Bulk export
   document.getElementById('bulk-export-btn').addEventListener('click', handleBulkExport);
 
+  // Backup & restore
+  document.getElementById('backup-export-btn').addEventListener('click', handleBackupExport);
+  document.getElementById('backup-import-btn').addEventListener('click', handleBackupImport);
+  document.getElementById('import-markdown-btn').addEventListener('click', handleMarkdownImport);
+
   // Context menu close on outside click
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.context-menu') && !e.target.closest('.exercise-menu-btn')) {
@@ -849,4 +855,40 @@ async function handleBulkExport() {
   const md = generateBulkMarkdown(workouts, start, end);
   const filename = `training-log-${start}-to-${end}.md`;
   await exportMarkdownFile(md, filename);
+}
+
+async function handleBackupExport() {
+  try {
+    const count = await exportJsonBackup();
+    showToast(`Backed up ${count} workout${count !== 1 ? 's' : ''}`);
+  } catch (err) {
+    showToast('Backup failed');
+  }
+}
+
+async function handleBackupImport() {
+  try {
+    const files = await pickFiles('.json', false);
+    if (!files || files.length === 0) return;
+    const text = await files[0].text();
+    const count = await importJsonBackup(text);
+    showToast(`Restored ${count} workout${count !== 1 ? 's' : ''}`);
+    await renderCalendar();
+    await renderRecentWorkouts();
+  } catch (err) {
+    showToast('Invalid backup file');
+  }
+}
+
+async function handleMarkdownImport() {
+  try {
+    const files = await pickFiles('.md,.txt,.markdown', true);
+    if (!files || files.length === 0) return;
+    const count = await importMarkdownFiles(files);
+    showToast(`Imported ${count} workout${count !== 1 ? 's' : ''}`);
+    await renderCalendar();
+    await renderRecentWorkouts();
+  } catch (err) {
+    showToast('Failed to import markdown');
+  }
 }
